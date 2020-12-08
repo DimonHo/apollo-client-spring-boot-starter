@@ -1,4 +1,4 @@
-package cn.tanzhou.starter.apollospringbootstarter;
+package cn.tanzhou.starter.apollo.client;
 
 /**
  * @author 敖癸

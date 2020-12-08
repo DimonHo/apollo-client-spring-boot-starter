@@ -1,4 +1,4 @@
-package cn.tanzhou.starter.apollospringbootstarter;
+package cn.tanzhou.starter.apollo.client;
 
 import com.ctrip.framework.apollo.core.ConfigConsts;
 import com.ctrip.framework.apollo.core.enums.Env;
@@ -27,6 +27,9 @@ public class TzMetaServerProvider implements MetaServerProvider {
     private String initMetaServerAddress() {
         // 1. Get from System Property
         String env = System.getProperty(ConfigConsts.APOLLO_ENV_KEY);
+        if (Strings.isNullOrEmpty(env)) {
+            env = System.getProperty("spring.profiles.active");
+        }
         String metaAddress = System.getProperty(ConfigConsts.APOLLO_META_KEY + env);
         if (Strings.isNullOrEmpty(metaAddress)) {
             // 2. Get from OS environment variable, which could not contain dot and is normally in UPPER case
@@ -57,8 +60,6 @@ public class TzMetaServerProvider implements MetaServerProvider {
 
     private String getTzMetaAddress(String env) {
         switch (env) {
-            case "dev":
-                return TzMetaAddress.DEV_META_ADDRESS;
             case "test":
                 return TzMetaAddress.TEST_META_ADDRESS;
             case "pre":
@@ -66,7 +67,7 @@ public class TzMetaServerProvider implements MetaServerProvider {
             case "prod":
                 return TzMetaAddress.PROD_META_ADDRESS;
             default:
-                return null;
+                return TzMetaAddress.DEV_META_ADDRESS;
         }
     }
 
