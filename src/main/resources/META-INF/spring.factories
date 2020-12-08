@@ -1,0 +1,6 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+cn.tanzhou.starter.apollo.client.TzApolloAutoConfiguration
+org.springframework.context.ApplicationContextInitializer=\
+cn.tanzhou.starter.apollo.client.TzApolloApplicationContextInitializer
+org.springframework.boot.env.EnvironmentPostProcessor=\
+cn.tanzhou.starter.apollo.client.TzApolloApplicationContextInitializer
