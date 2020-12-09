@@ -3,6 +3,7 @@ package cn.tanzhou.starter.apollo.client;
 import com.ctrip.framework.apollo.Config;
 import com.ctrip.framework.apollo.ConfigService;
 import com.ctrip.framework.apollo.core.ConfigConsts;
+import com.ctrip.framework.apollo.core.utils.StringUtils;
 import com.ctrip.framework.apollo.spring.boot.ApolloApplicationContextInitializer;
 import com.ctrip.framework.apollo.spring.config.ConfigPropertySourceFactory;
 import com.ctrip.framework.apollo.spring.config.PropertySourcesConstants;
@@ -90,8 +91,8 @@ public class TzApolloApplicationContextInitializer implements
     void initializeSystemProperty(ConfigurableEnvironment environment) {
         for (String propertyName : APOLLO_SYSTEM_PROPERTIES) {
             fillSystemPropertyFromEnvironment(environment, propertyName);
-            if (propertyName.equals("app.env") || propertyName.equals("spring.profiles.active")) {
-                fillSystemPropertyFromEnvironment(environment, ConfigConsts.APOLLO_META_KEY + System.getProperty("app.env"));
+            if ("app.env".equals(propertyName)) {
+                fillSystemPropertyFromEnvironment(environment, ConfigConsts.APOLLO_META_KEY + System.getProperty(propertyName));
             }
         }
     }
@@ -103,6 +104,15 @@ public class TzApolloApplicationContextInitializer implements
         }
         if ("app.env".equals(propertyName) && Strings.isNullOrEmpty(propertyValue)) {
             propertyValue = environment.getProperty("spring.profiles.active");
+            if (Strings.isNullOrEmpty(propertyValue)) {
+                propertyValue = TzMetaAddress.DEFAULT_ENV;
+            }
+        }
+        if (StringUtils.startsWith(propertyName, ConfigConsts.APOLLO_META_KEY)) {
+            propertyValue = environment.getProperty(propertyName);
+            if (Strings.isNullOrEmpty(propertyValue)) {
+                propertyValue = TzMetaAddress.getTzMetaAddress(System.getProperty("app.env"));
+            }
         }
 
         if (System.getProperty(propertyName) != null || Strings.isNullOrEmpty(propertyValue)) {
