@@ -7,7 +7,7 @@
 <dependency>
     <groupId>cn.tanzhou.starter</groupId>
     <artifactId>apollo-client-spring-boot-starter</artifactId>
-    <version>2.0.0</version>
+    <version>1.8.0-SNAPSHOT</version>
 </dependency>
 ```
 
