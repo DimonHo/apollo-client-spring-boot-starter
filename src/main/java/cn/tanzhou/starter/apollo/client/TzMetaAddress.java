@@ -14,4 +14,18 @@ public class TzMetaAddress {
 
     public static final String PROD_META_ADDRESS = "http://10.19.217.236:8080/,http://10.19.217.237:8080/,http://10.19.216.152:8080/,http://10.19.216.151:8080/";
 
+    public static final String DEFAULT_ENV = "dev";
+
+    public static String getTzMetaAddress(String env) {
+        switch (env) {
+            case "test":
+                return TzMetaAddress.TEST_META_ADDRESS;
+            case "pre":
+                return TzMetaAddress.PRE_META_ADDRESS;
+            case "prod":
+                return TzMetaAddress.PROD_META_ADDRESS;
+            default:
+                return TzMetaAddress.DEV_META_ADDRESS;
+        }
+    }
 }
