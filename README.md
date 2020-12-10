@@ -1,6 +1,6 @@
 # apollo-client-spring-boot-starter
 
-潭州平台apollo配置中心快速启动器
+apollo配置中心快速启动器
 
 用法：
 ```
@@ -11,7 +11,7 @@
 </dependency>
 ```
 
-引入后无需任何配置，即可直接接入潭州平台apollo配置中心。
+引入后无需任何配置，即可直接接入apollo配置中心。
 即默认`apollo.bootstrap.enabled`=`true`
 
 
