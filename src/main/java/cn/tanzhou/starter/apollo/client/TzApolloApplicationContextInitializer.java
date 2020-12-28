@@ -2,9 +2,7 @@ package cn.tanzhou.starter.apollo.client;
 
 import com.ctrip.framework.apollo.Config;
 import com.ctrip.framework.apollo.ConfigService;
-import com.ctrip.framework.apollo.core.ConfigConsts;
 import com.ctrip.framework.apollo.core.utils.StringUtils;
-import com.ctrip.framework.apollo.spring.boot.ApolloApplicationContextInitializer;
 import com.ctrip.framework.apollo.spring.config.ConfigPropertySourceFactory;
 import com.ctrip.framework.apollo.spring.config.PropertySourcesConstants;
 import com.ctrip.framework.apollo.spring.util.SpringInjector;
@@ -12,8 +10,7 @@ import com.ctrip.framework.apollo.util.factory.PropertiesFactory;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.context.ApplicationContextInitializer;
@@ -23,18 +20,22 @@ import org.springframework.core.env.CompositePropertySource;
 import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
+ * 重写ApolloApplicationContextInitializer <br />
+ * 兼容spring.application.name和spring.profiles.active属性 <br />
+ * 默认启动dev环境，根据环境自动加载潭州注册中心地址
+ *
  * @author 敖癸
  * @date 2020/12/8 - 21:05
  */
+@Slf4j
 public class TzApolloApplicationContextInitializer implements
     ApplicationContextInitializer<ConfigurableApplicationContext>, EnvironmentPostProcessor, Ordered {
 
     public static final int DEFAULT_ORDER = 0;
 
-    private static final Logger logger = LoggerFactory.getLogger(ApolloApplicationContextInitializer.class);
     private static final Splitter NAMESPACE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
-    private static final String[] APOLLO_SYSTEM_PROPERTIES = {"app.id", ConfigConsts.APOLLO_CLUSTER_KEY,
-        "apollo.cacheDir", "apollo.accesskey.secret", ConfigConsts.APOLLO_ENV_KEY,
+    private static final String[] APOLLO_SYSTEM_PROPERTIES = {ConfigConsts.APOLLO_ID_KEY, ConfigConsts.APOLLO_CLUSTER_KEY,
+        ConfigConsts.APOLLO_CACHE_DIR_KEY, ConfigConsts.APOLLO_ACCESSKEY_SECRET_KEY, ConfigConsts.APOLLO_ENV_KEY,
         PropertiesFactory.APOLLO_PROPERTY_ORDER_ENABLE};
 
     private final ConfigPropertySourceFactory configPropertySourceFactory = SpringInjector
@@ -47,11 +48,11 @@ public class TzApolloApplicationContextInitializer implements
         ConfigurableEnvironment environment = context.getEnvironment();
 
         if (!environment.getProperty(PropertySourcesConstants.APOLLO_BOOTSTRAP_ENABLED, Boolean.class, true)) {
-            logger.debug("Apollo bootstrap config is not enabled for context {}, see property: ${{}}", context,
+            log.debug("Apollo bootstrap config is not enabled for context {}, see property: ${{}}", context,
                 PropertySourcesConstants.APOLLO_BOOTSTRAP_ENABLED);
             return;
         }
-        logger.debug("Apollo bootstrap config is enabled for context {}", context);
+        log.debug("Apollo bootstrap config is enabled for context {}", context);
 
         initialize(environment);
     }
@@ -71,7 +72,7 @@ public class TzApolloApplicationContextInitializer implements
 
         String namespaces = environment
             .getProperty(PropertySourcesConstants.APOLLO_BOOTSTRAP_NAMESPACES, ConfigConsts.NAMESPACE_APPLICATION);
-        logger.debug("Apollo bootstrap namespaces: {}", namespaces);
+        log.debug("Apollo bootstrap namespaces: {}", namespaces);
         List<String> namespaceList = NAMESPACE_SPLITTER.splitToList(namespaces);
 
         CompositePropertySource composite = new CompositePropertySource(
@@ -91,7 +92,7 @@ public class TzApolloApplicationContextInitializer implements
     void initializeSystemProperty(ConfigurableEnvironment environment) {
         for (String propertyName : APOLLO_SYSTEM_PROPERTIES) {
             fillSystemPropertyFromEnvironment(environment, propertyName);
-            if ("app.env".equals(propertyName)) {
+            if (ConfigConsts.APOLLO_ENV_KEY.equals(propertyName)) {
                 fillSystemPropertyFromEnvironment(environment, ConfigConsts.APOLLO_META_KEY + System.getProperty(propertyName));
             }
         }
@@ -99,19 +100,22 @@ public class TzApolloApplicationContextInitializer implements
 
     private void fillSystemPropertyFromEnvironment(ConfigurableEnvironment environment, String propertyName) {
         String propertyValue = environment.getProperty(propertyName);
-        if ("app.id".equals(propertyName) && Strings.isNullOrEmpty(propertyValue)) {
-            propertyValue = environment.getProperty("spring.application.name");
+        // 如果app.id未指定，则获取spring.application.name的值
+        if (ConfigConsts.APOLLO_ID_KEY.equals(propertyName) && Strings.isNullOrEmpty(propertyValue)) {
+            propertyValue = environment.getProperty(ConfigConsts.SPRING_APPLICATION_NAME_KEY);
         }
-        if ("app.env".equals(propertyName) && Strings.isNullOrEmpty(propertyValue)) {
-            propertyValue = environment.getProperty("spring.profiles.active");
+        // 如果app.env未指定，则获取spring.profiles.active的值
+        if (ConfigConsts.APOLLO_ENV_KEY.equals(propertyName) && Strings.isNullOrEmpty(propertyValue)) {
+            propertyValue = environment.getProperty(ConfigConsts.SPRING_PROFILES_ACTIVE_KEY);
+            // 如果 app.env和spring.profiles.active都未指定，默认加载dev环境配置
             if (Strings.isNullOrEmpty(propertyValue)) {
                 propertyValue = TzMetaAddress.DEFAULT_ENV;
             }
         }
         if (StringUtils.startsWith(propertyName, ConfigConsts.APOLLO_META_KEY)) {
-            propertyValue = environment.getProperty(propertyName);
             if (Strings.isNullOrEmpty(propertyValue)) {
-                propertyValue = TzMetaAddress.getTzMetaAddress(System.getProperty("app.env"));
+                // 自动加载注册中心地址，如果没找到相应的环境，默认注册到dev环境
+                propertyValue = TzMetaAddress.getTzMetaAddress(System.getProperty(ConfigConsts.APOLLO_ENV_KEY));
             }
         }
 
@@ -170,3 +174,4 @@ public class TzApolloApplicationContextInitializer implements
         this.order = order;
     }
 }
+
